@@ -28,4 +28,4 @@ def test_image_systematization():
         result_files = os.listdir(f"./{result_dir}/{_result_dir}")
         assert len(result_files) == current_result_dirs.get(_result_dir, 0)
 
-
+    shutil.rmtree(result_dir)
