@@ -1,10 +1,10 @@
 import hashlib
-from datetime import datetime
 
+from datetime import datetime
 from PIL import UnidentifiedImageError, Image
 from PIL.ExifTags import TAGS
 
-from app.models.file import File
+from models.file import File
 
 
 class PhotoFileException(Exception):
@@ -18,7 +18,6 @@ class PhotoFile(File):
     """
     Класс файла изображения
     """
-
     def __init__(self, filepath: str):
         """
         Метод инициализирующий класс
@@ -28,7 +27,7 @@ class PhotoFile(File):
 
         # Получение изображения
         try:
-            self.__image = Image.open(filepath)
+            self.__image = Image.open(self.filepath)
         except UnidentifiedImageError as ex:
             detail = "Передан не поддерживаемый файл для изображения"
             raise PhotoFileException(detail) from ex
@@ -74,5 +73,4 @@ class PhotoFile(File):
         # Получение хеш-суммы изображения
         image_data = self.__image.tobytes()
         hash_sum = hashlib.sha256(image_data).hexdigest()
-
         return hash_sum

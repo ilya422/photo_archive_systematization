@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import logging
 
 from classes.image_systematization import ImageSystematization, ImageSystematizationException
@@ -16,7 +17,7 @@ args = parser.parse_args()
 
 # Запуск систематизации
 try:
-    ImageSystematization.run(source_dir=args.source_dir, result_dir=args.result_dir)
+    asyncio.run(ImageSystematization.run(source_dir=args.source_dir, result_dir=args.result_dir))
 except ImageSystematizationException as ex:
     logging.error(str(ex))
     exit(1)

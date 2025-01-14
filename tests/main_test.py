@@ -1,13 +1,15 @@
+import asyncio
 import os
 import shutil
 
-from classes.image_systematization import ImageSystematization
+from app.classes.image_systematization import ImageSystematization
 
 
 def test_image_systematization():
     source_dir = './source_dir'
     result_dir = './result_dir'
-    shutil.rmtree(result_dir)
+    if os.path.exists(result_dir):
+        shutil.rmtree(result_dir)
 
     current_result_dirs = {
         '2024': 4,
@@ -15,7 +17,7 @@ def test_image_systematization():
     }
 
     # Запуск систематизации изображений
-    ImageSystematization.run(source_dir=source_dir, result_dir=result_dir)
+    asyncio.run(ImageSystematization.run(source_dir=source_dir, result_dir=result_dir))
 
     # Проверка правильности папок
     result_dirs = os.listdir(result_dir)
@@ -28,4 +30,4 @@ def test_image_systematization():
         result_files = os.listdir(f"./{result_dir}/{_result_dir}")
         assert len(result_files) == current_result_dirs.get(_result_dir, 0)
 
-
+    shutil.rmtree(result_dir)

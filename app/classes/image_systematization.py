@@ -1,7 +1,9 @@
+import asyncio
 import logging
 import os.path
 
 from app.models import PhotoFile, PhotoFileException, FileException
+from config.app import MAX_COUNT_ASYNC_TASK
 
 
 class ImageSystematizationException(Exception):
@@ -44,7 +46,7 @@ class ImageSystematization:
         return list(photo_info.values())
 
     @classmethod
-    def run(cls, source_dir: str, result_dir: str) -> None:
+    async def run(cls, source_dir: str, result_dir: str) -> None:
         """
         Метод для запуска систематизации изображений
         :param source_dir: (str) - Путь до каталога источника изображений
@@ -65,18 +67,29 @@ class ImageSystematization:
         # Получение исходных изображений
         photos = cls.__get_photo_files_info(source_dir=source_dir)
 
-        # Распределение изображений
-        for photo in photos:
-            # Создаём подкаталог для года создания изображения
-            dir_path = os.path.join(result_dir, str(photo.created_at.year))
-            os.makedirs(dir_path, exist_ok=True)
+        # Копирование изображений
+        step_len = MAX_COUNT_ASYNC_TASK
+        exist_file_paths = set()
+        for step_from in range(0, len(photos), step_len):
+            tasks = []
+            for photo in photos[step_from:step_from + step_len]:
+                # Создание подкаталога для года создания изображения
+                dir_path = os.path.join(result_dir, str(photo.created_at.year))
+                os.makedirs(dir_path, exist_ok=True)
 
-            # Копируем исходное изображение в подкаталог
-            new_filepath = f"{dir_path}\\{photo.filename}"
-            try:
-                photo.copy_file(new_filepath)
-            except FileException as ex:
-                logging.error(f"Не удалось скопировать файл: {photo.filepath}. [{ex}]")
-                raise ImageSystematizationException from ex
+                # Формирование имени для нового файла
+                new_filepath = f"{dir_path}\\{photo.filename}"
+                base, extension = os.path.splitext(new_filepath)
+                file_number = 1
+                while new_filepath in exist_file_paths:
+                    new_filepath = f"{base} ({file_number}){extension}"
+                    file_number += 1
+                exist_file_paths.add(new_filepath)
+
+                # Создание задачи
+                tasks.append(
+                    asyncio.create_task(photo.copy_file(path=new_filepath))
+                )
+            await asyncio.gather(*tasks)
 
         return
