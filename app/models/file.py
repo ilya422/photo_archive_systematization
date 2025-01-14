@@ -1,6 +1,11 @@
+import logging
+
+import aiofiles
+import aiofiles.os
 import os
-import shutil
+
 from datetime import datetime
+
 
 class FileException(Exception):
     """
@@ -13,7 +18,6 @@ class File:
     """
     Класс файла
     """
-
     def __init__(self, filepath: str):
         """
         Метод инициализирующий класс
@@ -30,6 +34,7 @@ class File:
 
         self.__filepath = filepath
         self.__filename = os.path.basename(filepath)
+
         self.__created_at = self.__get_created_at()
 
     @property
@@ -53,7 +58,7 @@ class File:
         created_at = datetime.fromtimestamp(os.path.getctime(self.__filepath))
         return created_at
 
-    def copy_file(self, path: str) -> None:
+    async def copy_file(self, path: str) -> None:
         """
         Метод копирует файл
         :param path: (str) - Путь копирования
@@ -66,10 +71,17 @@ class File:
 
         base, extension = os.path.splitext(path)
         file_number = 1
-        while os.path.exists(path):
+        while await aiofiles.os.path.exists(path):
             path = f"{base} ({file_number}){extension}"
             file_number += 1
 
         # Копируем изображение
-        shutil.copy2(src=self.__filepath, dst=path)
+        try:
+            async with aiofiles.open(self.__filepath, mode='rb') as src:
+                async with aiofiles.open(path, mode='wb') as dst:
+                    content = await src.read()
+                    await dst.write(content)
+        except FileNotFoundError as ex:
+            logging.error(f"Ошибка при копировании файла: {self.__filepath}. [{ex}]")
+
         return
