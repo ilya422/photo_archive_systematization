@@ -1,4 +1,5 @@
 import logging
+import shutil
 
 import aiofiles
 import aiofiles.os
@@ -81,6 +82,7 @@ class File:
                 async with aiofiles.open(path, mode='wb') as dst:
                     content = await src.read()
                     await dst.write(content)
+                    shutil.copystat(self.__filepath, path)
         except FileNotFoundError as ex:
             logging.error(f"Ошибка при копировании файла: {self.__filepath}. [{ex}]")
 

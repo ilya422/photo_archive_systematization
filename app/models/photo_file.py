@@ -61,7 +61,7 @@ class PhotoFile(File):
         # Получение даты создания изображения
         created_at = datetime.strptime(metadata["DateTime"], '%Y:%m:%d %H:%M:%S') if metadata.get("DateTime") else None
         if not created_at:
-            return self.__created_at
+            return super().created_at
 
         return created_at
 
