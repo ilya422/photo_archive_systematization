@@ -26,9 +26,14 @@ class ImageSystematization:
         :param source_dir: (str) - Путь до каталога источника изображений
         :return: (list[PhotoFile])
         """
+        # Проверка параметров
+        if not isinstance(source_dir, str):
+            detail = f"Путь до каталога источника изображений не является строкой"
+            raise ImageSystematizationException(detail)
+
         photo_info = {}
-        for root, _, files in os.walk(source_dir):
-            bar = tqdm(desc=f'Обработка каталога: {root}', total=len(files))
+        for root, dirs, files in os.walk(source_dir):
+            progress_bar = tqdm(desc=f'Обработка каталога: {root}', total=len(files))
             for file in files:
                 # Получение объекта файла изображения
                 filepath = os.path.join(root, file)
@@ -37,7 +42,7 @@ class ImageSystematization:
                 except (FileException, PhotoFileException) as ex:
                     logging.error(f"Не удалось обработать файл: {filepath}. [{ex}]")
                     continue
-                bar.update(1)
+                progress_bar.update(1)
                 # Поиск исходного изображения (чистка дублей)
                 if not photo_info.get(photo_file.hash_sum):
                     photo_info[photo_file.hash_sum] = photo_file
@@ -45,7 +50,7 @@ class ImageSystematization:
                 if photo_file.created_at < photo_info[photo_file.hash_sum].created_at:
                     photo_info[photo_file.hash_sum] = photo_file
                     continue
-            bar.close()
+            progress_bar.close()
         return list(photo_info.values())
 
     @classmethod
@@ -71,7 +76,7 @@ class ImageSystematization:
         photos = cls.__get_photo_files_info(source_dir=source_dir)
 
         # Копирование изображений
-        bar = tqdm(desc=f'Копирование изображений', total=len(photos))
+        progress_bar = tqdm(desc=f'Копирование изображений', total=len(photos))
         step_len = MAX_COUNT_ASYNC_TASK
         exist_file_paths = set()
         for step_from in range(0, len(photos), step_len):
@@ -95,7 +100,7 @@ class ImageSystematization:
                     asyncio.create_task(photo.copy_file(path=new_filepath))
                 )
             await asyncio.gather(*tasks)
-            bar.update(len(photos[step_from:step_from + step_len]))
-        bar.close()
+            progress_bar.update(len(photos[step_from:step_from + step_len]))
+        progress_bar.close()
 
         return
